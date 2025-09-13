@@ -1,7 +1,6 @@
 import { Telegraf, Context, Markup } from 'telegraf';
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import * as dotenv from 'dotenv';
-import { Update, Message } from 'telegraf/types';
 
 dotenv.config();
 
