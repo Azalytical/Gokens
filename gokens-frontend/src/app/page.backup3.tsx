@@ -10,8 +10,7 @@ if (typeof window !== 'undefined') {
 }
 
 import React, { useState, useEffect, useMemo, useCallback, FC } from 'react';
-import { Wallet, TrendingUp, Users, Image, Gamepad2, ChevronRight, Sparkles, BarChart3, Shield, Zap, AlertCircle, ExternalLink, CheckCircle, MessageCircle, Link as LinkIcon } from 'lucide-react';
-import Link from 'next/link';
+import { Wallet, TrendingUp, Users, Image, Gamepad2, ChevronRight, Sparkles, BarChart3, Shield, Zap, AlertCircle, ExternalLink, CheckCircle, MessageCircle } from 'lucide-react';
 import {
   ConnectionProvider,
   WalletProvider,
@@ -868,7 +867,7 @@ function GokensMarketplace() {
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-purple-600/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <LinkIcon className="w-8 h-8 text-purple-400" />
+                <Link className="w-8 h-8 text-purple-400" />
               </div>
               <h3 className="font-bold mb-2">Seamless Sync</h3>
               <p className="text-sm text-gray-400">Portfolio synced across platforms</p>
@@ -909,11 +908,15 @@ function GokensMarketplace() {
               <a href={TELEGRAM_BOT_URL} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white">
                 <MessageCircle className="w-5 h-5" />
               </a>
-   
-             
+              <a href="https://github.com/gokens" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white">
+                GitHub
+              </a>
+              <a href="https://twitter.com/gokens" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white">
+                Twitter
+              </a>
             </div>
             <div className="text-center">
-              <p className="text-gray-400 text-sm">© 2025 Gokens. Built for Solana Hackathon</p>
+              <p className="text-gray-400 text-sm">© 2024 Gokens. Built for Solana Hackathon</p>
               <p className="text-gray-500 text-xs mt-1">Program ID: {PROGRAM_ID.toString().substring(0, 8)}...</p>
             </div>
           </div>
