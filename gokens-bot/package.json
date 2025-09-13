@@ -1,0 +1,26 @@
+{
+  "name": "gokens-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot for Gokens NFT marketplace",
+  "main": "dist/bot.js",
+  "scripts": {
+    "dev": "nodemon --exec ts-node src/bot.ts",
+    "build": "tsc",
+    "start": "node dist/bot.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["telegram", "bot", "solana", "nft", "blockchain"],
+  "author": "Gokens Team",
+  "license": "MIT",
+  "dependencies": {
+    "@solana/web3.js": "^1.91.7",
+    "dotenv": "^16.4.5",
+    "telegraf": "^4.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "nodemon": "^3.1.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.3"
+  }
+}
