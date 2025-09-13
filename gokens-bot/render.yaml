@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: gokens-bot
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: SOLANA_RPC_URL
+        value: https://api.devnet.solana.com
