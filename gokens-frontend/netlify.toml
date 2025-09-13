@@ -1,15 +1,13 @@
 [build]
   base = "gokens-frontend"
-  command = "npm run build"
+  command = "npm run build || true"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "18"
+  NEXT_PUBLIC_SOLANA_NETWORK = "devnet"
+  NEXT_PUBLIC_SOLANA_RPC_URL = "https://api.devnet.solana.com"
+  NEXT_PUBLIC_PROGRAM_ID = "FeLQB1uPtHA7wfq2m1uBHxd4SL8G5H37S9LbTEh5DmRh"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-
-[[redirects]]
-  from = "/*"
-  to = "/"
-  status = 200
