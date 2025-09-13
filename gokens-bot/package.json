@@ -2,10 +2,10 @@
   "name": "gokens-bot",
   "version": "1.0.0",
   "description": "Gokens Telegram Bot",
-  "main": "src/bot.js",
+  "main": "src/bot.ts",
   "scripts": {
     "build": "tsc",
-    "start": "node src/bot.js",
+    "start": "node src/bot.ts",
     "dev": "ts-node src/bot.ts"
   },
   "dependencies": {
