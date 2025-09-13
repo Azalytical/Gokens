@@ -1,7 +1,5 @@
 "use client"
 
-"use client"
-
 // Скрываем ошибки кошелька для демо
 if (typeof window !== 'undefined') {
   const orig = console.error;
@@ -12,7 +10,7 @@ if (typeof window !== 'undefined') {
 }
 
 import React, { useState, useEffect, useMemo, useCallback, FC } from 'react';
-import { Wallet, TrendingUp, Users, Image, Gamepad2, ChevronRight, Sparkles, BarChart3, Shield, Zap, AlertCircle, ExternalLink, CheckCircle } from 'lucide-react';
+import { Wallet, TrendingUp, Users, Image, Gamepad2, ChevronRight, Sparkles, BarChart3, Shield, Zap, AlertCircle, ExternalLink, CheckCircle, MessageCircle, Link } from 'lucide-react';
 import { 
   ConnectionProvider, 
   WalletProvider, 
@@ -42,12 +40,12 @@ import SafeWalletButton from '../components/SafeWalletButton';
 // Импортируем стили для wallet-adapter
 import '@solana/wallet-adapter-react-ui/styles.css';
 
-
 // Constants
 const PROGRAM_ID = new PublicKey('FeLQB1uPtHA7wfq2m1uBHxd4SL8G5H37S9LbTEh5DmRh');
-const NETWORK = 'devnet'; // Используем devnet для тестирования
+const NETWORK = 'devnet';
+const TELEGRAM_BOT_URL = 'https://t.me/gokens_bot';
 
-// IDL для вашей программы
+// IDL для программы
 const IDL = {
   version: "0.1.0",
   name: "gokens_contracts",
@@ -86,7 +84,143 @@ const IDL = {
   ]
 };
 
-// Компонент статуса кошелька
+// KYC Modal Component
+const KYCModal: FC<{ isOpen: boolean; onClose: () => void; onSuccess: () => void }> = ({ isOpen, onClose, onSuccess }) => {
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    country: '',
+    idType: 'passport',
+    agreed: false
+  });
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    // Симуляция KYC верификации
+    setTimeout(() => {
+      setStep(3);
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 2000);
+    }, 2000);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-gray-900 rounded-2xl max-w-md w-full p-6 border border-purple-500/30">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <Shield className="w-6 h-6 text-purple-400" />
+            <h2 className="text-xl font-bold">KYC Verification</h2>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
+        </div>
+
+        {step === 1 && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold mb-4">Basic Information</h3>
+            <input
+              type="text"
+              placeholder="Full Name"
+              value={formData.fullName}
+              onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+              className="w-full px-4 py-2 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              className="w-full px-4 py-2 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+            <select
+              value={formData.country}
+              onChange={(e) => setFormData({...formData, country: e.target.value})}
+              className="w-full px-4 py-2 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="">Select Country</option>
+              <option value="US">United States</option>
+              <option value="UK">United Kingdom</option>
+              <option value="KZ">Kazakhstan</option>
+              <option value="RU">Russia</option>
+            </select>
+            <button
+              onClick={() => setStep(2)}
+              disabled={!formData.fullName || !formData.email || !formData.country}
+              className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 transition disabled:opacity-50"
+            >
+              Continue
+            </button>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold mb-4">Verification</h3>
+            <div className="flex items-start space-x-2">
+              <input
+                type="checkbox"
+                checked={formData.agreed}
+                onChange={(e) => setFormData({...formData, agreed: e.target.checked})}
+                className="mt-1"
+              />
+              <label className="text-sm text-gray-400">
+                I agree to the terms and conditions and authorize verification of my identity
+              </label>
+            </div>
+            <div className="flex space-x-3">
+              <button onClick={() => setStep(1)} className="flex-1 py-3 border border-purple-500 rounded-lg">
+                Back
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={!formData.agreed || loading}
+                className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg disabled:opacity-50"
+              >
+                {loading ? 'Verifying...' : 'Submit'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="text-center py-8">
+            <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-400" />
+            <h3 className="text-xl font-bold mb-2">Verification Complete!</h3>
+            <p className="text-gray-400">Your KYC has been successfully verified.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Telegram Connection Banner
+const TelegramBanner: FC<{ telegramId: string | null; isConnected: boolean }> = ({ telegramId, isConnected }) => {
+  if (!telegramId) return null;
+
+  return (
+    <div className="fixed bottom-4 right-4 bg-blue-500/20 border border-blue-500/50 rounded-lg px-4 py-3 backdrop-blur-sm z-40">
+      <div className="flex items-center space-x-3">
+        <MessageCircle className="w-5 h-5 text-blue-400" />
+        <div>
+          <p className="text-sm text-blue-400 font-semibold">Telegram Connected</p>
+          <p className="text-xs text-gray-300">ID: {telegramId}</p>
+        </div>
+        {isConnected && (
+          <CheckCircle className="w-4 h-4 text-green-400" />
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Wallet Status Component
 const WalletStatus: FC = () => {
   const wallet = useWallet();
   const { connection } = useConnection();
@@ -137,7 +271,7 @@ const WalletStatus: FC = () => {
   );
 };
 
-// Основной компонент маркетплейса
+// Main Marketplace Component
 function GokensMarketplace() {
   const { connection } = useConnection();
   const wallet = useWallet();
@@ -148,12 +282,36 @@ function GokensMarketplace() {
   const [txStatus, setTxStatus] = useState<{ type: 'success' | 'error' | 'info' | null; message: string }>({ type: null, message: '' });
   const [collections, setCollections] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
+  const [showKYCModal, setShowKYCModal] = useState(false);
+  const [kycVerified, setKycVerified] = useState(false);
+  const [telegramUserId, setTelegramUserId] = useState<string | null>(null);
+  const [telegramWalletAddress, setTelegramWalletAddress] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
+    
+    // Проверяем параметры из Telegram
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const telegramId = params.get('telegram');
+      const connectWallet = params.get('connect');
+      
+      if (telegramId) {
+        setTelegramUserId(telegramId);
+        console.log('Connected from Telegram, ID:', telegramId);
+        
+        // Показываем уведомление
+        showTxStatus('info', `Connected from Telegram Bot! ID: ${telegramId}`);
+      }
+      
+      if (connectWallet) {
+        setTelegramWalletAddress(connectWallet);
+        console.log('Telegram wallet address:', connectWallet);
+      }
+    }
   }, []);
 
-  // Получаем программу с правильной обработкой
+  // Получаем программу
   const program = useMemo(() => {
     if (anchorWallet && connection) {
       try {
@@ -190,7 +348,18 @@ function GokensMarketplace() {
     }, 5000);
   };
 
-  // Создание коллекции с улучшенной обработкой ошибок
+  // Обработка KYC
+  const handleKYCSuccess = () => {
+    setKycVerified(true);
+    showTxStatus('success', 'KYC verification completed successfully!');
+    
+    // Если подключен Telegram, отправляем статус обратно
+    if (telegramUserId) {
+      console.log('Sending KYC status to Telegram user:', telegramUserId);
+    }
+  };
+
+  // Создание коллекции
   const createCollection = useCallback(async () => {
     if (!program || !wallet.publicKey) {
       showTxStatus('error', 'Please connect your Phantom wallet first');
@@ -228,13 +397,10 @@ function GokensMarketplace() {
     } catch (error: any) {
       console.error("Error creating collection:", error);
       
-      // Детальная обработка ошибок
       if (error.message?.includes('User rejected')) {
         showTxStatus('error', 'Transaction cancelled by user');
       } else if (error.message?.includes('insufficient')) {
         showTxStatus('error', 'Insufficient SOL balance. Get free SOL from faucet');
-      } else if (error.message?.includes('Network')) {
-        showTxStatus('error', 'Network error. Please check your connection');
       } else {
         showTxStatus('error', `Error: ${error.message || 'Unknown error occurred'}`);
       }
@@ -243,7 +409,7 @@ function GokensMarketplace() {
     }
   }, [program, wallet.publicKey]);
 
-  // Минт NFT с улучшенной обработкой
+  // Минт NFT
   const mintNFT = useCallback(async (artName: string, price: number) => {
     if (!program || !wallet.publicKey) {
       showTxStatus('error', 'Please connect your Phantom wallet first');
@@ -363,6 +529,15 @@ function GokensMarketplace() {
                 <button className="hover:text-purple-400 transition">Create</button>
                 <button className="hover:text-purple-400 transition">Community</button>
                 <button className="hover:text-purple-400 transition">Stats</button>
+                <a 
+                  href={TELEGRAM_BOT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center space-x-1 hover:text-purple-400 transition"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Telegram Bot</span>
+                </a>
               </nav>
             </div>
             {mounted && <WalletStatus />}
@@ -403,6 +578,7 @@ function GokensMarketplace() {
             <p className="text-gray-300 text-lg mb-8">
               Tokenize art masterpieces and gaming assets on Solana. 
               Join the revolution of fractional ownership and digital collectibles.
+              {telegramUserId && " Connected via Telegram Bot!"}
             </p>
             <div className="flex flex-wrap gap-4">
               <button 
@@ -419,6 +595,15 @@ function GokensMarketplace() {
               >
                 Test Transaction
               </button>
+              {!kycVerified && wallet.connected && (
+                <button 
+                  onClick={() => setShowKYCModal(true)}
+                  className="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 rounded-lg hover:from-green-700 hover:to-teal-700 transition flex items-center space-x-2"
+                >
+                  <Shield className="w-4 h-4" />
+                  <span>Verify KYC</span>
+                </button>
+              )}
               {!wallet.connected && (
                 <a
                   href="https://phantom.app/"
@@ -430,6 +615,15 @@ function GokensMarketplace() {
                   <ExternalLink className="w-4 h-4" />
                 </a>
               )}
+              <a
+                href={TELEGRAM_BOT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-3 bg-blue-600 rounded-lg hover:bg-blue-700 transition flex items-center space-x-2"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Open Telegram Bot</span>
+              </a>
             </div>
             {!wallet.connected && mounted && (
               <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
@@ -438,7 +632,15 @@ function GokensMarketplace() {
                 </p>
                 <p className="text-gray-400 text-xs mt-2">
                   Don't have Phantom? <a href="https://phantom.app/" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300">Install it here</a>
+                  {" or use our "}
+                  <a href={TELEGRAM_BOT_URL} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">Telegram Bot</a>
                 </p>
+              </div>
+            )}
+            {kycVerified && (
+              <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg flex items-center space-x-2">
+                <CheckCircle className="w-5 h-5 text-green-400" />
+                <span className="text-green-400 text-sm">KYC Verified - Full access enabled</span>
               </div>
             )}
           </div>
@@ -645,6 +847,57 @@ function GokensMarketplace() {
         </div>
       </section>
 
+      {/* Telegram Integration Section */}
+      <section className="container mx-auto px-4 py-12">
+        <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl p-8 border border-blue-500/30">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold mb-4">
+              Trade on the Go with 
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent ml-2">
+                Telegram Bot
+              </span>
+            </h2>
+            <p className="text-gray-300 max-w-2xl mx-auto">
+              Access all platform features directly from Telegram. Connect wallet, browse NFTs, check portfolio, and get real-time updates - all without leaving your favorite messenger.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-600/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MessageCircle className="w-8 h-8 text-blue-400" />
+              </div>
+              <h3 className="font-bold mb-2">Instant Access</h3>
+              <p className="text-sm text-gray-400">No app installation needed</p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-purple-600/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Link className="w-8 h-8 text-purple-400" />
+              </div>
+              <h3 className="font-bold mb-2">Seamless Sync</h3>
+              <p className="text-sm text-gray-400">Portfolio synced across platforms</p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-pink-600/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Zap className="w-8 h-8 text-pink-400" />
+              </div>
+              <h3 className="font-bold mb-2">Real-time Updates</h3>
+              <p className="text-sm text-gray-400">Get notified about NFT drops</p>
+            </div>
+          </div>
+          <div className="text-center mt-8">
+            <a
+              href={TELEGRAM_BOT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center space-x-2 px-8 py-4 bg-blue-600 rounded-lg hover:bg-blue-700 transition text-lg font-semibold"
+            >
+              <MessageCircle className="w-6 h-6" />
+              <span>Start Trading in Telegram</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t border-purple-500/20 mt-16">
         <div className="container mx-auto px-4 py-8">
@@ -655,6 +908,17 @@ function GokensMarketplace() {
               </div>
               <span className="text-xl font-bold">Gokens</span>
             </div>
+            <div className="flex items-center space-x-4 mb-4 md:mb-0">
+              <a href={TELEGRAM_BOT_URL} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white">
+                <MessageCircle className="w-5 h-5" />
+              </a>
+              <a href="https://github.com/gokens" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white">
+                GitHub
+              </a>
+              <a href="https://twitter.com/gokens" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white">
+                Twitter
+              </a>
+            </div>
             <div className="text-center">
               <p className="text-gray-400 text-sm">© 2024 Gokens. Built for Solana Hackathon</p>
               <p className="text-gray-500 text-xs mt-1">Program ID: {PROGRAM_ID.toString().substring(0, 8)}...</p>
@@ -662,11 +926,24 @@ function GokensMarketplace() {
           </div>
         </div>
       </footer>
+
+      {/* KYC Modal */}
+      <KYCModal 
+        isOpen={showKYCModal}
+        onClose={() => setShowKYCModal(false)}
+        onSuccess={handleKYCSuccess}
+      />
+
+      {/* Telegram Connection Banner */}
+      <TelegramBanner 
+        telegramId={telegramUserId}
+        isConnected={wallet.connected}
+      />
     </div>
   );
 }
 
-// Главный компонент с провайдерами
+// Main App Component with Providers
 export default function App() {
   const [walletError, setWalletError] = useState<Error | null>(null);
   
