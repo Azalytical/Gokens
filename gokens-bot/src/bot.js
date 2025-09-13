@@ -8,7 +8,7 @@ require('dotenv').config();
 // ===== КОНФИГУРАЦИЯ =====
 const BOT_TOKEN = process.env.BOT_TOKEN || '8236253203:AAGTFLqMxz1ygQFaep6p0y1zGANsSDAcqYg';
 const SOLANA_RPC = process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://gokens.netlify.app';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://gokens-web.netlify.app';
 const PROGRAM_ID = process.env.PROGRAM_ID || 'FeLQB1uPtHA7wfq2m1uBHxd4SL8G5H37S9LbTEh5DmRh';
 
 // ===== EXPRESS СЕРВЕР ДЛЯ HEALTH CHECK =====
