@@ -1,17 +1,26 @@
 {
   "name": "gokens-bot",
   "version": "1.0.0",
-  "description": "Gokens Telegram Bot",
+  "description": "Gokens Telegram Bot with Full Integration",
   "main": "src/bot.js",
   "scripts": {
     "start": "node src/bot.js",
-    "dev": "node src/bot.js"
+    "api": "node src/api.js",
+    "dev": "nodemon src/bot.js",
+    "all": "concurrently \"npm run api\" \"npm run start\""
   },
   "dependencies": {
     "@solana/web3.js": "^1.87.0",
+    "@project-serum/anchor": "^0.26.0",
+    "@supabase/supabase-js": "^2.38.0",
     "telegraf": "^4.15.0",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "axios": "^1.6.0",
     "dotenv": "^16.3.1",
-    "express": "^4.18.2"
+    "qrcode": "^1.5.3",
+    "concurrently": "^8.2.0",
+    "nodemon": "^3.0.1"
   },
   "engines": {
     "node": ">=20.0.0"

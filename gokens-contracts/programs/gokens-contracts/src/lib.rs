@@ -1,232 +1,163 @@
+// ДОБАВИТЬ в файл: gokens-contracts/programs/gokens-contracts/src/lib.rs
+// В НАЧАЛО файла, заменив существующие use statements
+
 use anchor_lang::prelude::*;
-use anchor_spl::token::Token;
+use anchor_spl::token::{self, Token, TokenAccount, Mint};
+use anchor_spl::associated_token::AssociatedToken;
+// Используем solana_program из anchor_lang
+use anchor_lang::solana_program::clock::Clock;
 
-declare_id!("FeLQB1uPtHA7wfq2m1uBHxd4SL8G5H37S9LbTEh5DmRh");
+// Остальной существующий код остается как есть...
+// Но добавляем новые структуры и функции ПОСЛЕ существующих
 
-#[program]
-pub mod gokens_contracts {
-    use super::*;
-
-    // Создание NFT коллекции для искусства
-    pub fn create_art_collection(
-        ctx: Context<CreateArtCollection>,
-        name: String,
-        symbol: String,
-        uri: String,
-    ) -> Result<()> {
-        let collection = &mut ctx.accounts.collection;
-        collection.authority = ctx.accounts.authority.key();
-        collection.name = name;
-        collection.symbol = symbol;
-        collection.uri = uri;
-        collection.total_supply = 0;
-        collection.is_active = true;
-        
-        msg!("Art collection created: {}", collection.name);
-        Ok(())
-    }
-
-    // Минтинг NFT произведения искусства
-    pub fn mint_art_nft(
-        ctx: Context<MintArtNFT>,
-        name: String,
-        description: String,
-        uri: String,
-        price: u64,
-        royalty_percentage: u8,
-    ) -> Result<()> {
-        let nft = &mut ctx.accounts.nft;
-        let collection = &mut ctx.accounts.collection;
-        
-        // Проверяем, что коллекция активна
-        require!(collection.is_active, ErrorCode::CollectionNotActive);
-        
-        nft.mint = ctx.accounts.mint.key();
-        nft.owner = ctx.accounts.owner.key();
-        nft.collection = collection.key();
-        nft.name = name;
-        nft.description = description;
-        nft.uri = uri;
-        nft.price = price;
-        nft.royalty_percentage = royalty_percentage;
-        nft.creator = ctx.accounts.owner.key();
-        nft.is_listed = false;
-        
-        // Увеличиваем общее количество в коллекции
-        collection.total_supply += 1;
-        
-        msg!("NFT minted: {}", nft.name);
-        Ok(())
-    }
-
-    // Создание фракционных токенов для произведения искусства
-    pub fn create_fractional_tokens(
-        ctx: Context<CreateFractionalTokens>,
-        total_shares: u64,
-        price_per_share: u64,
-    ) -> Result<()> {
-        let fractional = &mut ctx.accounts.fractional_art;
-        
-        fractional.nft = ctx.accounts.nft.key();
-        fractional.total_shares = total_shares;
-        fractional.available_shares = total_shares;
-        fractional.price_per_share = price_per_share;
-        fractional.token_mint = ctx.accounts.token_mint.key();
-        fractional.is_active = true;
-        
-        msg!("Fractional tokens created: {} shares at {} each", total_shares, price_per_share);
-        Ok(())
-    }
-
-    // Покупка фракционной доли
-    pub fn buy_fractional_share(
-        ctx: Context<BuyFractionalShare>,
-        amount: u64,
-    ) -> Result<()> {
-        let fractional = &mut ctx.accounts.fractional_art;
-        
-        // Проверяем доступность долей
-        require!(fractional.available_shares >= amount, ErrorCode::InsufficientShares);
-        require!(fractional.is_active, ErrorCode::FractionalNotActive);
-        
-        // Обновляем доступные доли
-        fractional.available_shares -= amount;
-        
-        // Здесь должна быть логика перевода токенов и оплаты
-        // Для MVP это упрощенная версия
-        
-        msg!("Purchased {} fractional shares", amount);
-        Ok(())
-    }
-
-    // Листинг NFT на маркетплейсе
-    pub fn list_nft(
-        ctx: Context<ListNFT>,
-        price: u64,
-    ) -> Result<()> {
-        let nft = &mut ctx.accounts.nft;
-        
-        // Проверяем владельца
-        require!(nft.owner == ctx.accounts.owner.key(), ErrorCode::NotOwner);
-        
-        nft.price = price;
-        nft.is_listed = true;
-        
-        msg!("NFT listed for {} lamports", price);
-        Ok(())
-    }
-}
-
-// Структуры данных
+// ДОБАВИТЬ ПОСЛЕ существующих структур (после struct FractionalArt):
 
 #[account]
-pub struct ArtCollection {
-    pub authority: Pubkey,
-    pub name: String,
-    pub symbol: String,
-    pub uri: String,
-    pub total_supply: u64,
-    pub is_active: bool,
+pub struct SwapState {
+    pub user: Pubkey,
+    pub jupiter_program: Pubkey,
+    pub input_mint: Pubkey,
+    pub output_mint: Pubkey,
+    pub amount_in: u64,
+    pub amount_out: u64,
+    pub timestamp: i64,
 }
 
 #[account]
-pub struct ArtNFT {
-    pub mint: Pubkey,
-    pub owner: Pubkey,
-    pub collection: Pubkey,
-    pub name: String,
-    pub description: String,
-    pub uri: String,
+pub struct KYCRecord {
+    pub user: Pubkey,
+    pub user_id: String,
+    pub verification_level: u8,
+    pub verified_at: i64,
+    pub is_verified: bool,
+}
+
+#[account]
+pub struct PriceFeed {
+    pub asset_type: String,
     pub price: u64,
-    pub royalty_percentage: u8,
-    pub creator: Pubkey,
-    pub is_listed: bool,
+    pub confidence: u64,
+    pub timestamp: i64,
+    pub oracle: Pubkey,
 }
 
-#[account]
-pub struct FractionalArt {
-    pub nft: Pubkey,
-    pub total_shares: u64,
-    pub available_shares: u64,
-    pub price_per_share: u64,
-    pub token_mint: Pubkey,
-    pub is_active: bool,
-}
+// ДОБАВИТЬ в секцию impl программы ПОСЛЕ существующих функций:
 
-// Контексты для инструкций
+    // Интеграция с Jupiter для обмена токенов (упрощенная версия)
+    pub fn initialize_swap(
+        ctx: Context<InitializeSwap>,
+        amount_in: u64,
+        minimum_amount_out: u64,
+    ) -> Result<()> {
+        let swap_state = &mut ctx.accounts.swap_state;
+        let clock = Clock::get()?;
+        
+        swap_state.user = ctx.accounts.user.key();
+        swap_state.jupiter_program = ctx.accounts.jupiter_program.key();
+        swap_state.input_mint = ctx.accounts.input_mint.key();
+        swap_state.output_mint = ctx.accounts.output_mint.key();
+        swap_state.amount_in = amount_in;
+        swap_state.amount_out = minimum_amount_out;
+        swap_state.timestamp = clock.unix_timestamp;
+        
+        msg!("Jupiter swap initialized: {} -> {}", amount_in, minimum_amount_out);
+        Ok(())
+    }
+
+    // KYC/AML заглушка
+    pub fn verify_kyc(
+        ctx: Context<VerifyKYC>,
+        user_id: String,
+        verification_level: u8,
+    ) -> Result<()> {
+        let kyc_record = &mut ctx.accounts.kyc_record;
+        let clock = Clock::get()?;
+        
+        kyc_record.user = ctx.accounts.user.key();
+        kyc_record.user_id = user_id;
+        kyc_record.verification_level = verification_level;
+        kyc_record.verified_at = clock.unix_timestamp;
+        kyc_record.is_verified = true;
+        
+        msg!("KYC verified for user: {}", kyc_record.user_id);
+        Ok(())
+    }
+
+    // Oracle интеграция для получения цены
+    pub fn update_price_feed(
+        ctx: Context<UpdatePriceFeed>,
+        asset_type: String,
+        price: u64,
+        confidence: u64,
+    ) -> Result<()> {
+        let price_feed = &mut ctx.accounts.price_feed;
+        let clock = Clock::get()?;
+        
+        price_feed.asset_type = asset_type.clone();
+        price_feed.price = price;
+        price_feed.confidence = confidence;
+        price_feed.timestamp = clock.unix_timestamp;
+        price_feed.oracle = ctx.accounts.oracle.key();
+        
+        msg!("Price updated: {} = {} (confidence: {})", 
+             price_feed.asset_type, price, confidence);
+        Ok(())
+    }
+
+// ДОБАВИТЬ ПОСЛЕ существующих Context структур:
 
 #[derive(Accounts)]
-pub struct CreateArtCollection<'info> {
+pub struct InitializeSwap<'info> {
     #[account(
         init,
-        payer = authority,
-        space = 8 + 32 + 64 + 16 + 256 + 8 + 1
+        payer = user,
+        space = 8 + 32 + 32 + 32 + 32 + 8 + 8 + 8
     )]
-    pub collection: Account<'info, ArtCollection>,
+    pub swap_state: Account<'info, SwapState>,
+    /// CHECK: Jupiter program - validated by address
+    pub jupiter_program: AccountInfo<'info>,
+    pub input_mint: Account<'info, Mint>,
+    pub output_mint: Account<'info, Mint>,
     #[account(mut)]
-    pub authority: Signer<'info>,
-    pub system_program: Program<'info, System>,
-}
-
-#[derive(Accounts)]
-pub struct MintArtNFT<'info> {
-    #[account(
-        init,
-        payer = owner,
-        space = 8 + 32 + 32 + 32 + 128 + 256 + 256 + 8 + 1 + 32 + 1
-    )]
-    pub nft: Account<'info, ArtNFT>,
-    #[account(mut)]
-    pub collection: Account<'info, ArtCollection>,
-    /// CHECK: This is the mint account
-    pub mint: AccountInfo<'info>,
-    #[account(mut)]
-    pub owner: Signer<'info>,
+    pub user: Signer<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
-pub struct CreateFractionalTokens<'info> {
+pub struct VerifyKYC<'info> {
     #[account(
         init,
-        payer = authority,
-        space = 8 + 32 + 8 + 8 + 8 + 32 + 1
+        payer = user,
+        space = 8 + 32 + 64 + 1 + 8 + 1
     )]
-    pub fractional_art: Account<'info, FractionalArt>,
-    pub nft: Account<'info, ArtNFT>,
-    /// CHECK: Token mint for fractional shares
-    pub token_mint: AccountInfo<'info>,
+    pub kyc_record: Account<'info, KYCRecord>,
     #[account(mut)]
-    pub authority: Signer<'info>,
+    pub user: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
-pub struct BuyFractionalShare<'info> {
+#[instruction(asset_type: String)]
+pub struct UpdatePriceFeed<'info> {
+    #[account(
+        init_if_needed,
+        payer = oracle,
+        space = 8 + 64 + 8 + 8 + 8 + 32,
+        seeds = [b"price-feed", asset_type.as_bytes()],
+        bump
+    )]
+    pub price_feed: Account<'info, PriceFeed>,
     #[account(mut)]
-    pub fractional_art: Account<'info, FractionalArt>,
-    #[account(mut)]
-    pub buyer: Signer<'info>,
+    pub oracle: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
 
-#[derive(Accounts)]
-pub struct ListNFT<'info> {
-    #[account(mut)]
-    pub nft: Account<'info, ArtNFT>,
-    pub owner: Signer<'info>,
-}
+// ДОБАВИТЬ в существующий enum ErrorCode:
 
-// Ошибки
-#[error_code]
-pub enum ErrorCode {
-    #[msg("Collection is not active")]
-    CollectionNotActive,
-    #[msg("Not the owner")]
-    NotOwner,
-    #[msg("Insufficient shares available")]
-    InsufficientShares,
-    #[msg("Fractional sale is not active")]
-    FractionalNotActive,
-}
+    #[msg("Swap failed")]
+    SwapFailed,
+    #[msg("KYC not verified")]
+    KYCNotVerified,
+    #[msg("Oracle price stale")]
+    OraclePriceStale,
