@@ -1,5 +1,4 @@
-
-require("./instrument.js");
+// Полностью замените содержимое файла: gokens-bot/src/bot.js
 
 const { Telegraf, Markup } = require('telegraf');
 const express = require('express');
