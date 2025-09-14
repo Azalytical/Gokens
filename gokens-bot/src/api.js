@@ -1,4 +1,3 @@
-// Создать НОВЫЙ файл: gokens-bot/src/api.js
 
 const express = require('express');
 const cors = require('cors');

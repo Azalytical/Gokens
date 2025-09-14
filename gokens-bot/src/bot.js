@@ -1,14 +1,5 @@
-// Полностью замените содержимое файла: gokens-bot/src/bot.js
 
 require("./instrument.js");
-
-const Sentry = require("@sentry/node");
-
-try {
-  foo();
-} catch (e) {
-  Sentry.captureException(e);
-}
 
 const { Telegraf, Markup } = require('telegraf');
 const express = require('express');
